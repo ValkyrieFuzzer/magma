@@ -12,8 +12,9 @@
 ##
 
 # Required for llvm-config
-export PATH="$FUZZER/repo/llvm_install/clang+llvm/bin:$PATH"
+export PATH="$FUZZER/llvm_install/clang+llvm/bin:$PATH"
+export LD_LIBRARY_PATH="$FUZZER/llvm_install/clang+llvm/lib:$LD_LIBRARY_PATH"
 export ANGORA_DISABLE_CPU_BINDING=1
 
-"$FUZZER/repo/angora_fuzzer" -M 200 -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
-    -t "$OUT/angora-track/$PROGRAM" $FUZZARGS -- "$OUT/angora-fast/$PROGRAM" $ARGS 2>&1
+"$FUZZER/repo/target/release/fuzzer" -M 200 -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
+    -t "$OUT/valkyrie-track/$PROGRAM" -s "$OUT/valkyrie-asan/$PROGRAM" $FUZZARGS -- "$OUT/valkyrie-fast/$PROGRAM" $ARGS 2>&1

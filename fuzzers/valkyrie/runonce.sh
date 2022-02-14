@@ -27,4 +27,4 @@ if [ -z "$args" ]; then
 fi
 
 timeout -s KILL --preserve-status $TIMELIMIT bash -c \
-    "run_limited '$OUT/angora-track/$PROGRAM' $args"
+    "run_limited '$OUT/bc/$PROGRAM' $args"

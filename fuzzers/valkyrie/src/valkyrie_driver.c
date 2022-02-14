@@ -1,4 +1,5 @@
-//===- angora_driver.c - a glue between Angora and libFuzzer --*- C++ -* --===//
+//===- valkyrie_driver.c - a glue between Valkyrie and libFuzzer --*- C++ -*
+//--===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 /* This file allows to fuzz libFuzzer-style target functions
- (LLVMFuzzerTestOneInput) with Angora using a persistent (in-process) mode.
+ (LLVMFuzzerTestOneInput) with Valkyrie using a persistent (in-process) mode.
 
 Usage:
 ################################################################################
@@ -22,28 +23,28 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   return 0;
 }
 EOF
-# Build your target with using fresh angora-clang.
-angora-clang test_fuzzer.cc -c
-# Build this file, link it with Angora runtime and the target code.
-clang++ angora_driver.c test_fuzzer.o $ANGORA_HOME/bin/lib/libruntime_fast.a
-# Run Angora:
+# Build your target with using fresh valkyrie-clang.
+valkyrie-clang test_fuzzer.cc -c
+# Build this file, link it with Valkyrie runtime and the target code.
+clang++ valkyrie_driver.c test_fuzzer.o $ANGORA_HOME/bin/lib/libruntime_fast.a
+# Run Valkyrie:
 rm -rf IN OUT; mkdir IN OUT; echo z > IN/z;
-$ANGORA_HOME/bin/angora-fuzzer -i IN -o OUT ./a.out
+$ANGORA_HOME/bin/valkyrie-fuzzer -i IN -o OUT ./a.out
 ################################################################################
 Environment Variables:
 There are a few environment variables that can be set to use features that
-Angora doesn't have.
+Valkyrie doesn't have.
 
 ANGORA_DRIVER_STDERR_DUPLICATE_FILENAME: Setting this *appends* stderr to the
 file specified. If the file does not exist, it is created. This is useful for
 getting stack traces (when using ASAN for example) or original error messages
 on hard to reproduce bugs.
 
-ANGORA_DRIVER_EXTRA_STATS_FILENAME: Setting this causes Angora to write extra
+ANGORA_DRIVER_EXTRA_STATS_FILENAME: Setting this causes Valkyrie to write extra
 statistics to the file specified. Currently these are peak_rss_mb
 (the peak amount of virtual memory used in MB) and slowest_unit_time_secs. If
 the file does not exist it is created. If the file does exist then
-angora_driver assumes it was restarted by Angora and will try to read old
+valkyrie_driver assumes it was restarted by Valkyrie and will try to read old
 statistics from the file. If that fails then the process will quit.
 
 */
@@ -115,8 +116,8 @@ __attribute__((weak)) int LLVMFuzzerTestOneInput(const uint8_t *Data,
 __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv);
 
 // Input buffer.
-static const size_t kMaxAngoraInputSize = 1 << 20;
-static uint8_t AngoraInputBuf[kMaxAngoraInputSize];
+static const size_t kMaxValkyrieInputSize = 1 << 20;
+static uint8_t ValkyrieInputBuf[kMaxValkyrieInputSize];
 
 // Variables we need for writing to the extra stats file.
 static FILE *extra_stats_file = NULL;
@@ -127,8 +128,8 @@ static const char *kExtraStatsFormatString =
     "peak_rss_mb            : %u\n"
     "slowest_unit_time_sec  : %u\n";
 
-// Experimental feature to use angora_driver without ANGORA's deferred mode.
-// Needs to run before __angora_auto_init.
+// Experimental feature to use valkyrie_driver without ANGORA's deferred mode.
+// Needs to run before __valkyrie_auto_init.
 __attribute__((constructor(0))) void __decide_deferred_forkserver(void) {
   if (getenv("ANGORA_DRIVER_DONT_DEFER")) {
     if (unsetenv("__ANGORA_DEFER_FORKSRV")) {
@@ -267,7 +268,7 @@ static void maybe_duplicate_stderr() {
 // Define LLVMFuzzerMutate to avoid link failures for targets that use it
 // with libFuzzer's LLVMFuzzerCustomMutator.
 size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize) {
-  assert(0 && "LLVMFuzzerMutate should not be called from angora_driver");
+  assert(0 && "LLVMFuzzerMutate should not be called from valkyrie_driver");
   return 0;
 }
 
@@ -294,13 +295,13 @@ int ExecuteFilesOnyByOne(int argc, char **argv) {
 __attribute__((weak)) int main(int argc, char **argv) {
   fprintf(stderr,
           "======================= INFO =========================\n"
-          "This binary is built for Angora.\n"
+          "This binary is built for Valkyrie.\n"
           "To run the target function on individual input(s) execute this:\n"
           "  %s < INPUT_FILE\n"
           "or\n"
           "  %s INPUT_FILE1 [INPUT_FILE2 ... ]\n"
-          "To fuzz with Angora execute this:\n"
-          "  angora-fuzzer [angora-flags] %s [-N]\n"
+          "To fuzz with Valkyrie execute this:\n"
+          "  valkyrie-fuzzer [valkyrie-flags] %s [-N]\n"
           "======================================================\n",
           argv[0], argv[0], argv[0]);
   if (LLVMFuzzerInitialize) LLVMFuzzerInitialize(&argc, &argv);
@@ -327,12 +328,12 @@ __attribute__((weak)) int main(int argc, char **argv) {
 
   time_t unit_time_secs;
 
-  ssize_t n_read = read(0, AngoraInputBuf, kMaxAngoraInputSize);
+  ssize_t n_read = read(0, ValkyrieInputBuf, kMaxValkyrieInputSize);
   if (n_read > 0) {
-    // Copy AngoraInputBuf into a separate buffer to let asan find buffer
+    // Copy ValkyrieInputBuf into a separate buffer to let asan find buffer
     // overflows. Don't use unique_ptr/etc to avoid extra dependencies.
     uint8_t *copy = (uint8_t *)malloc(n_read);
-    memcpy(copy, AngoraInputBuf, n_read);
+    memcpy(copy, ValkyrieInputBuf, n_read);
 
     struct timeval unit_start_time;
     CHECK_ERROR(gettimeofday(&unit_start_time, NULL) == 0,
@@ -353,20 +354,3 @@ __attribute__((weak)) int main(int argc, char **argv) {
   }
   fprintf(stderr, "%s: successfully executed input\n", argv[0]);
 }
-
-/// Linker hack.
-///
-/// There are many symbols in `llvm_mode/libcxx/build_track/lib/libc++.a` that
-/// are undefined. You may see them all using `objdump -t libc++.a | grep
-/// *UND.*\ dfs$.*`. These functions are tained by DFSan when it's totally not
-/// necessary to. Worth, we can't remove them out of static lib unless we
-/// recompile them.
-///
-/// Therefore, a easy hack is to manually "define" those undefined symbols.
-/// This one here is the only one that actually blocks php from compiling, and
-/// it seems it won't affect the semantics of the original program anyway.
-///
-/// Note that this is the symbol name in the static library, therefore, this
-/// file has to compiled with `-Wl,--demangle $CFLAGS` to make sure the symbol
-/// name don't change.
-void _ZNKSt3__120__vector_base_commonILb1EE20__throw_length_errorEv() {}

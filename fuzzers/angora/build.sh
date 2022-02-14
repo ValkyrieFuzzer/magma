@@ -13,6 +13,9 @@ fi
 
 cd "$FUZZER/repo"
 
+# Apply 'changed compile method.' patch to angora
+git apply 0001-Import-changes-from-valkyrie.patch
+
 # Install Rust
 export RUSTUP_HOME="$HOME/.cargo/"
 export CARGO_HOME="$HOME/.cargo/"
@@ -30,7 +33,7 @@ export LD_LIBRARY_PATH="$FUZZER/repo/llvm_install/clang+llvm/lib:$LD_LIBRARY_PAT
 
 # Compile angora_driver.c
 mkdir -p "$OUT/angora-fast"
-USE_FAST=1 "./bin/angora-clang" $CFLAGS -c "angora_driver.c" -fPIC -o "$OUT/angora-fast/angora_driver.o"
+USE_FAST=1 "./bin/angora-clang" -Wl,--demangle $CFLAGS -c "angora_driver.c" -fPIC -o "$OUT/angora-fast/angora_driver.o"
 
 mkdir -p "$OUT/angora-track"
-USE_TRACK=1 "./bin/angora-clang" $CFLAGS -c "angora_driver.c" -fPIC -o "$OUT/angora-track/angora_driver.o"
+USE_TRACK=1 "./bin/angora-clang" -Wl,--demangle $CFLAGS -c "angora_driver.c" -fPIC -o "$OUT/angora-track/angora_driver.o"

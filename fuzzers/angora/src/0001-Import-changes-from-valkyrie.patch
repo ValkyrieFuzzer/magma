@@ -1,0 +1,63 @@
+From 1ee52ea4bd69bcb32ae3b941ba19f67d1b70138c Mon Sep 17 00:00:00 2001
+From: chibin <chibinzhang@hotmail.com>
+Date: Thu, 22 Apr 2021 04:55:30 -0700
+Subject: [PATCH] Import changes from 'valkyrie'
+
+---
+ llvm_mode/compiler/angora_clang.c | 13 ++++++++-----
+ llvm_mode/libcxx/CMakeLists.txt   |  4 ++--
+ 2 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/llvm_mode/compiler/angora_clang.c b/llvm_mode/compiler/angora_clang.c
+index f15ea60..a7832f0 100644
+--- a/llvm_mode/compiler/angora_clang.c
++++ b/llvm_mode/compiler/angora_clang.c
+@@ -367,17 +367,19 @@ static void edit_params(u32 argc, char **argv) {
+   if (is_cxx) {
+     // FIXME: or use the same header
+     // cc_params[cc_par_cnt++] = "-I/path-to-llvm/include/c++/v1";
++    cc_params[cc_par_cnt++] = "-stdlib=libc++";
+     if (clang_type == CLANG_FAST_TYPE) {
+       cc_params[cc_par_cnt++] = alloc_printf("-L%s/lib/libcxx_fast/", obj_path);
+-      cc_params[cc_par_cnt++] = "-stdlib=libc++";
++      cc_params[cc_par_cnt++] = "-lc++fast";
+       cc_params[cc_par_cnt++] = "-Wl,--start-group";
+       cc_params[cc_par_cnt++] = "-lc++abifast";
+       cc_params[cc_par_cnt++] = "-lc++abi";
+       cc_params[cc_par_cnt++] = "-Wl,--end-group";
+-    }
+-    else if (clang_type == CLANG_TRACK_TYPE) {
+-      cc_params[cc_par_cnt++] = alloc_printf("-L%s/lib/libcxx_track/", obj_path);
+-      cc_params[cc_par_cnt++] = "-stdlib=libc++";
++    } else if (clang_type == CLANG_TRACK_TYPE) {
++      cc_params[cc_par_cnt++] =
++          alloc_printf("-L%s/lib/libcxx_track/", obj_path);
++      cc_params[cc_par_cnt++] = "-lc++";
++      cc_params[cc_par_cnt++] = "-lc++track";
+       cc_params[cc_par_cnt++] = "-Wl,--start-group";
+       cc_params[cc_par_cnt++] = "-lc++abitrack";
+       cc_params[cc_par_cnt++] = "-lc++abi";
+@@ -385,6 +387,7 @@ static void edit_params(u32 argc, char **argv) {
+     }
+   }
+ 
++
+   if (maybe_linking) {
+ 
+     if (x_set) {
+diff --git a/llvm_mode/libcxx/CMakeLists.txt b/llvm_mode/libcxx/CMakeLists.txt
+index 67904e7..5255ed2 100644
+--- a/llvm_mode/libcxx/CMakeLists.txt
++++ b/llvm_mode/libcxx/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ # run compile.sh
+ 
+-install (FILES "build_fast/lib/libc++.a" DESTINATION "${ANGORA_LIB_DIR}/libcxx_fast")
++install (FILES "build_fast/lib/libc++.a" DESTINATION "${ANGORA_LIB_DIR}/libcxx_fast" RENAME "libc++fast.a")
+ install (FILES "build_fast/lib/libc++abi.a" DESTINATION "${ANGORA_LIB_DIR}/libcxx_fast" RENAME "libc++abifast.a")
+-install (FILES "build_track/lib/libc++.a" DESTINATION "${ANGORA_LIB_DIR}/libcxx_track")
++install (FILES "build_track/lib/libc++.a" DESTINATION "${ANGORA_LIB_DIR}/libcxx_track" RENAME "libc++track.a")
+ install (FILES "build_track/lib/libc++abi.a" DESTINATION "${ANGORA_LIB_DIR}/libcxx_track" RENAME "libc++abitrack.a")
+-- 
+2.17.1
+
